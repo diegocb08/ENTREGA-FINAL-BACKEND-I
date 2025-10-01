@@ -1,0 +1,27 @@
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>{{title}}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <nav
+      style="background:#fff; padding:10px; margin-bottom:20px; box-shadow:0 2px 5px rgba(0,0,0,0.1);"
+    >
+      <a
+        href="/products"
+        style="margin-right:15px; text-decoration:none; font-weight:bold;"
+      >Productos</a>
+      <a
+        href="/realtimeproducts"
+        style="margin-right:15px; text-decoration:none; font-weight:bold;"
+      >Tiempo real</a>
+    </nav>
+
+    {{{body}}}
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/realtime.js"></script>
+  </body>
+</html>

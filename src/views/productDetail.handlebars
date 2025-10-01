@@ -1,0 +1,16 @@
+<h1>{{product.title}}</h1>
+<p>{{product.description}}</p>
+<p><strong>Precio:</strong> ${{product.price}}</p>
+<p><strong>Categoría:</strong> {{product.category}}</p>
+<p><strong>Stock:</strong> {{product.stock}}</p>
+
+<button id="addBtn" data-pid="{{product._id}}">Agregar al carrito</button>
+
+<script>
+  document.getElementById("addBtn").addEventListener("click", async (e) => {
+  const pid = e.target.dataset.pid; const cid = prompt("Ingrese su Cart ID
+  (cid):"); if (!cid) return; const res = await
+  fetch(`/api/carts/${cid}/product/${pid}`, { method: "POST" }); const data =
+  await res.json(); if (data.status === "success") alert("Agregado al carrito");
+  else alert(data.error || "Error al agregar"); });
+</script>
