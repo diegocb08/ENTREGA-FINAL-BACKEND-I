@@ -19,24 +19,24 @@
 </div>
 
 <script>
-  const PID = "{{product._id}}"; function isHex24(s){ return
-  /^[a-f0-9]{24}$/i.test(s||''); } async function getOrCreateCartId(){ let cid =
-  localStorage.getItem('cid'); if (!isHex24(cid)) { const r = await
-  fetch('/api/carts', { method:'POST',
-  headers:{'Content-Type':'application/json'} }); const data = await r.json();
-  if (data?.status === 'success' && data?.cart?._id) { cid = data.cart._id;
-  localStorage.setItem('cid', cid); const badge =
-  document.getElementById('cidBadge'); if (badge) badge.textContent = 'CID: ' +
-  cid; } else { throw new Error(data?.error || 'No se pudo crear el carrito'); }
-  } return cid; } document.getElementById('addBtn').addEventListener('click',
+  const PID = "{{product._id}}"; function isHex24(value) { return
+  /^[a-f0-9]{24}$/i.test(value || ""); } async function getOrCreateCartId() {
+  let cid = localStorage.getItem("cid"); if (!isHex24(cid)) { const response =
+  await fetch("/api/carts", { method: "POST", headers: { "Content-Type":
+  "application/json" }, }); const data = await response.json(); if (data?.status
+  === "success" && data?.cart?._id) { cid = data.cart._id;
+  localStorage.setItem("cid", cid); const badge =
+  document.getElementById("cidBadge"); if (badge) badge.textContent = "CID: " +
+  cid; } else { throw new Error(data?.error || "No se pudo crear el carrito"); }
+  } return cid; } document.getElementById("addBtn").addEventListener("click",
   async () => { try { const qty = Math.max(1,
-  Number(document.getElementById('qty').value) || 1); const cid = await
+  Number(document.getElementById("qty").value) || 1); const cid = await
   getOrCreateCartId(); const res = await
   fetch(`/api/carts/${cid}/products/${PID}`, { method: "POST", headers: {
-  "Content-Type": "application/json" }, body: JSON.stringify({ inc: qty }) });
-  const data = await res.json(); if (data.status === "success") {
-  document.getElementById('addBtn').textContent = "Agregado ✓"; setTimeout(() =>
-  document.getElementById('addBtn').textContent = "Agregar al carrito", 1000); }
-  else { alert(data.error || "Error al agregar"); } } catch(e){ alert(e.message
-  || 'Error'); } });
+  "Content-Type": "application/json" }, body: JSON.stringify({ inc: qty }), });
+  const data = await res.json(); if (data.status === "success") { const button =
+  document.getElementById("addBtn"); button.textContent = "Agregado";
+  setTimeout(() => { button.textContent = "Agregar al carrito"; }, 1000); } else
+  { alert(data.error || "Error al agregar"); } } catch (e) { alert(e.message ||
+  "Error"); } });
 </script>

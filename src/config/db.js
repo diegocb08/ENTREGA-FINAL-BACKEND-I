@@ -8,7 +8,7 @@ async function connectDB(uri) {
   await mongoose.connect(uri, {
     dbName: process.env.MONGODB_DBNAME || "ecommerce",
   });
-  console.log("🗄️  MongoDB conectado");
+  console.log("MongoDB conectado");
 }
 
 module.exports = { connectDB };

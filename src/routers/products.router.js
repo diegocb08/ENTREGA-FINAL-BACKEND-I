@@ -15,7 +15,6 @@ function buildLink(req, page, overrides = {}) {
   return url.pathname + "?" + url.searchParams.toString();
 }
 
-/** LIST + filtros + paginación + sort  (Entrega Final) */
 router.get("/", async (req, res) => {
   try {
     const { limit, page, sort, query, category, status, minPrice, maxPrice } =
@@ -72,7 +71,6 @@ router.get("/", async (req, res) => {
   }
 });
 
-/** GET /api/products/categories  (dropdown dinámico) */
 router.get("/categories", async (_req, res) => {
   try {
     const cats = await productDAO.getCategories();
@@ -82,7 +80,6 @@ router.get("/categories", async (_req, res) => {
   }
 });
 
-/** CRUD clásico (útil para pruebas/insomnia/postman y coherente con consigna global) */
 router.get("/:pid", async (req, res) => {
   try {
     const product = await productDAO.getProductById(req.params.pid);

@@ -31,7 +31,6 @@ function buildViewLink(req, targetPage) {
 
 router.get("/", (_req, res) => res.redirect("/products"));
 
-/** Home estática (pre-entrega 2) */
 router.get("/home", async (_req, res, next) => {
   try {
     const products = await productDAO.getProducts(); // sin paginar: vista estática
@@ -41,7 +40,6 @@ router.get("/home", async (_req, res, next) => {
   }
 });
 
-/** Listado paginado con filtros/orden (entrega final) */
 router.get("/products", async (req, res, next) => {
   try {
     const { limit, page, sort, query, category, status, minPrice, maxPrice } =
@@ -76,7 +74,6 @@ router.get("/products", async (req, res, next) => {
   }
 });
 
-/** Detalle de producto */
 router.get("/products/:pid", async (req, res, next) => {
   try {
     const product = await productDAO.getProductById(req.params.pid);
@@ -93,7 +90,6 @@ router.get("/products/:pid", async (req, res, next) => {
   }
 });
 
-/** Carrito poblado */
 router.get("/carts/:cid", async (req, res, next) => {
   try {
     const cart = await cartDAO.getCartById(req.params.cid);
@@ -116,7 +112,6 @@ router.get("/carts/:cid", async (req, res, next) => {
   }
 });
 
-/** Realtime (pre-entrega 2) */
 router.get("/realtimeproducts", async (_req, res, next) => {
   try {
     res.render("realTimeProducts", { title: "Productos en tiempo real" });

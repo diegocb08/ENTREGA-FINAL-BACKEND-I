@@ -58,7 +58,7 @@ app.use((req, res) => {
 
 // ---- Error handler
 app.use((err, req, res, _next) => {
-  console.error("❌ Error:", err);
+  console.error("Error:", err);
   if (req.accepts("html")) {
     return res
       .status(500)
@@ -72,6 +72,6 @@ const PORT = process.env.PORT || 8080;
 (async () => {
   await connectDB(process.env.MONGODB_URI);
   server.listen(PORT, () => {
-    console.log(`🚀 Server listo en http://localhost:${PORT}`);
+    console.log(`Servidor disponible en http://localhost:${PORT}`);
   });
 })();

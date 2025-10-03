@@ -1,11 +1,7 @@
-// src/public/js/products.js
-console.log("[products] script externo cargado");
-
 (function () {
   const $ = (sel) => document.querySelector(sel);
   const params = new URLSearchParams(window.location.search);
 
-  // Prefill seguro (sin interpolaciones del template)
   if ($("#q")) $("#q").value = params.get("query") || $("#q").value;
   if (params.get("limit") && $("#limit"))
     $("#limit").value = params.get("limit");
@@ -13,7 +9,6 @@ console.log("[products] script externo cargado");
     $("#statusSelect").value = params.get("status");
   if (params.get("sort") && $("#sort")) $("#sort").value = params.get("sort");
 
-  // Cargar categorías dinámicas
   fetch("/api/products/categories")
     .then((r) => r.json())
     .then(({ status, payload }) => {
@@ -34,7 +29,6 @@ console.log("[products] script externo cargado");
       /* no-op */
     });
 
-  // Aplicar filtros
   $("#apply")?.addEventListener("click", () => {
     const q = $("#q")?.value.trim();
     const cat = $("#categorySelect")?.value;
@@ -56,7 +50,6 @@ console.log("[products] script externo cargado");
     window.location = "/products?" + params.toString();
   });
 
-  // --- Add to cart (autocreate cart)
   function isHex24(s) {
     return /^[a-f0-9]{24}$/i.test(s || "");
   }
@@ -72,7 +65,6 @@ console.log("[products] script externo cargado");
   async function getOrCreateCartId() {
     let cid = localStorage.getItem("cid");
     if (!isHex24(cid)) {
-      console.log("[products] creando carrito…");
       cid = await createCart();
       localStorage.setItem("cid", cid);
       const badge = document.getElementById("cidBadge");
@@ -81,7 +73,6 @@ console.log("[products] script externo cargado");
     return cid;
   }
 
-  // Delegación de click para los botones "Agregar al carrito"
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest(".addToCartBtn");
     if (!btn) return;
@@ -95,7 +86,7 @@ console.log("[products] script externo cargado");
       });
       const data = await res.json();
       if (data.status === "success") {
-        btn.textContent = "Agregado ✓";
+        btn.textContent = "Agregado";
         setTimeout(() => (btn.textContent = "Agregar al carrito"), 1000);
       } else {
         alert(data.error || "Error al agregar");

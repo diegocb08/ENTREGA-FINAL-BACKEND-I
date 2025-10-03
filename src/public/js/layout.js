@@ -1,4 +1,3 @@
-// src/public/js/layout.js
 (function () {
   const cidKey = "cid";
   const cidBadge = document.getElementById("cidBadge");

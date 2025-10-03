@@ -27,13 +27,14 @@
 {{/if}}
 
 <script>
-  const CID = "{{cid}}"; document.querySelectorAll('.delBtn').forEach(btn => {
-  btn.addEventListener('click', async () => { const pid = btn.dataset.pid; const
-  r = await fetch(`/api/carts/${CID}/products/${pid}`, { method: 'DELETE' });
-  const data = await r.json(); if (data.status === 'success') location.reload();
-  else alert(data.error || 'Error al eliminar'); }); });
-  document.getElementById('emptyBtn')?.addEventListener('click', async () => {
-  const r = await fetch(`/api/carts/${CID}`, { method: 'DELETE' }); const data =
-  await r.json(); if (data.status === 'success') location.reload(); else
-  alert(data.error || 'Error al vaciar'); });
+  const CID = "{{cid}}"; document.querySelectorAll(".delBtn").forEach((btn) => {
+  btn.addEventListener("click", async () => { const pid = btn.dataset.pid; const
+  response = await fetch(`/api/carts/${CID}/products/${pid}`, { method:
+  "DELETE", }); const data = await response.json(); if (data.status ===
+  "success") { location.reload(); } else { alert(data.error || "Error al
+  eliminar"); } }); });
+  document.getElementById("emptyBtn")?.addEventListener("click", async () => {
+  const response = await fetch(`/api/carts/${CID}`, { method: "DELETE" }); const
+  data = await response.json(); if (data.status === "success") {
+  location.reload(); } else { alert(data.error || "Error al vaciar"); } });
 </script>

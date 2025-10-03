@@ -1,4 +1,3 @@
-// src/public/js/realtime.js
 (function () {
   const socket = io();
   const tbody = document.querySelector("#productsTable tbody");
@@ -15,7 +14,7 @@
         <td>${escapeHTML(p.category ?? "")}</td>
         <td>$${Number(p.price ?? 0).toFixed(2)}</td>
         <td>${Number(p.stock ?? 0)}</td>
-        <td>${p.status ? "✔" : "✖"}</td>
+  <td>${p.status ? "Sí" : "No"}</td>
         <td>${escapeHTML(p.code ?? "")}</td>
         <td style="text-align:right;">
           <button data-pid="${p._id}" class="delBtn">Eliminar</button>
@@ -53,7 +52,7 @@
       return toast("Faltan campos obligatorios");
     socket.emit("product:create", payload);
     form.reset();
-    formMsg.textContent = "✓ Creado";
+    formMsg.textContent = "Creado";
     setTimeout(() => (formMsg.textContent = ""), 1200);
   });
 
