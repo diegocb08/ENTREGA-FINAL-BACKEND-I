@@ -1,40 +1,34 @@
-<h1>Carrito</h1>
+<section id="cartView" data-cid="{{cid}}">
+  <h1>Carrito</h1>
 
-{{#if cart.products.length}}
-  <ul>
-    {{#each cart.products}}
-      <li style="margin:.5rem 0;">
-        <strong>{{this.product.title}}</strong>
-        — ${{this.product.price}}
-        — Cantidad:
-        {{this.quantity}}
-        <button class="delBtn" data-pid="{{this.product._id}}">Eliminar</button>
-      </li>
-    {{/each}}
-  </ul>
+  {{#if cart.products.length}}
+    <ul>
+      {{#each cart.products}}
+        <li style="margin:.5rem 0;">
+          <strong>{{this.product.title}}</strong>
+          — ${{this.product.price}}
+          — Cantidad:
+          {{this.quantity}}
+          <button
+            class="delBtn"
+            data-pid="{{this.product._id}}"
+          >Eliminar</button>
+        </li>
+      {{/each}}
+    </ul>
 
-  <p style="margin-top:1rem; font-size:1.1rem;">
-    <strong>Total:</strong>
-    ${{total}}
-  </p>
+    <p style="margin-top:1rem; font-size:1.1rem;">
+      <strong>Total:</strong>
+      ${{total}}
+    </p>
 
-  <div style="margin-top:1rem; display:flex; gap:.5rem;">
-    <button id="emptyBtn">Vaciar carrito</button>
-    <a href="/products">Seguir comprando</a>
-  </div>
-{{else}}
-  <p>Carrito vacío</p>
-{{/if}}
+    <div style="margin-top:1rem; display:flex; gap:.5rem;">
+      <button id="emptyBtn">Vaciar carrito</button>
+      <a href="/products">Seguir comprando</a>
+    </div>
+  {{else}}
+    <p>Carrito vacío</p>
+  {{/if}}
+</section>
 
-<script>
-  const CID = "{{cid}}"; document.querySelectorAll(".delBtn").forEach((btn) => {
-  btn.addEventListener("click", async () => { const pid = btn.dataset.pid; const
-  response = await fetch(`/api/carts/${CID}/products/${pid}`, { method:
-  "DELETE", }); const data = await response.json(); if (data.status ===
-  "success") { location.reload(); } else { alert(data.error || "Error al
-  eliminar"); } }); });
-  document.getElementById("emptyBtn")?.addEventListener("click", async () => {
-  const response = await fetch(`/api/carts/${CID}`, { method: "DELETE" }); const
-  data = await response.json(); if (data.status === "success") {
-  location.reload(); } else { alert(data.error || "Error al vaciar"); } });
-</script>
+<script src="/public/js/cart.js"></script>
