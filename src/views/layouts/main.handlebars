@@ -27,11 +27,13 @@
       border-radius:8px; font-size:.9rem; cursor:pointer; } .btn.primary {
       background:var(--brand); color:var(--brand-contrast);
       border-color:var(--brand); } .btn:hover { filter:brightness(.97); }
-      .cid-badge { padding:6px 8px; border:1px solid var(--border);
+      .cart-state { display:flex; flex-direction:column; align-items:flex-start;
+      gap:2px; } .cid-badge { padding:6px 8px; border:1px solid var(--border);
       border-radius:8px; font-size:.85rem; color:var(--muted); background:#fff;
-      } main { padding:18px 0 32px; } footer { border-top:1px solid
-      var(--border); color:var(--muted); font-size:.9rem; padding:16px 0 28px;
-      background:#fafafa; margin-top:24px; }
+      } .cart-hint { font-size:.75rem; color:var(--muted); } main { padding:18px
+      0 32px; } footer { border-top:1px solid var(--border); color:var(--muted);
+      font-size:.9rem; padding:16px 0 28px; background:#fafafa; margin-top:24px;
+      }
     </style>
   </head>
   <body>
@@ -44,10 +46,22 @@
           <a href="/realtimeproducts">Realtime</a>
         </nav>
         <div class="nav-right">
-          <button class="btn" id="myCartBtn" type="button">Mi carrito</button>
-          <button class="btn primary" id="newCartBtn" type="button">Nuevo
-            carrito</button>
-          <div id="cidBadge" class="cid-badge" title="Cart ID activo">CID: —</div>
+          <button
+            class="btn"
+            id="myCartBtn"
+            type="button"
+            title="Abrir el carrito activo"
+          >Mi carrito</button>
+          <button
+            class="btn primary"
+            id="newCartBtn"
+            type="button"
+            title="Crear un carrito nuevo y reemplazar el actual"
+          >Nuevo carrito</button>
+          <div class="cart-state">
+            <div id="cidBadge" class="cid-badge" title="Cart ID activo">CID: —</div>
+            <span class="cart-hint">Crear uno nuevo reemplaza el actual</span>
+          </div>
         </div>
       </div>
     </header>

@@ -40,6 +40,15 @@
     if (e.target?.id === "newCartBtn") {
       e.preventDefault();
       try {
+        const existingCid = getCid();
+        if (isHex24(existingCid)) {
+          const confirmed = window.confirm(
+            "Ya tenés un carrito activo. ¿Querés crear uno nuevo y reemplazarlo?"
+          );
+          if (!confirmed) {
+            return;
+          }
+        }
         const cid = await createCart();
         window.location = "/carts/" + cid;
       } catch (err) {
