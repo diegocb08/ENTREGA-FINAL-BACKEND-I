@@ -1,4 +1,5 @@
 const { Router } = require("express");
+const { isValidObjectId } = require("mongoose");
 const CartDAO = require("../dao/cart.dao");
 const cartDAO = new CartDAO();
 
@@ -9,100 +10,124 @@ router.post("/", async (_req, res) => {
   try {
     const cart = await cartDAO.createCart();
     res.status(201).json({ status: "success", cart });
-  } catch {
-    res.status(500).json({ status: "error", error: "Error al crear carrito" });
+  } catch (e) {
+    res.status(500).json({ status: "error", error: e.message });
   }
 });
 
-// Obtener carrito con populate
+// GET carrito poblado
 router.get("/:cid", async (req, res) => {
+  const { cid } = req.params;
+  if (!isValidObjectId(cid)) {
+    return res.status(400).json({ status: "error", error: "cid inválido" });
+  }
   try {
-    const cart = await cartDAO.getCartById(req.params.cid);
-    if (cart) return res.json({ status: "success", cart });
-    res.status(404).json({ status: "error", error: "Carrito no encontrado" });
-  } catch {
-    res
-      .status(500)
-      .json({ status: "error", error: "Error al obtener carrito" });
+    const cart = await cartDAO.getCartById(cid);
+    if (!cart)
+      return res
+        .status(404)
+        .json({ status: "error", error: "Carrito no encontrado" });
+    res.json({ status: "success", payload: cart });
+  } catch (e) {
+    res.status(500).json({ status: "error", error: e.message });
   }
 });
 
-// Agregar producto (+1) al carrito
-router.post("/:cid/product/:pid", async (req, res) => {
+// Agregar producto (+inc)
+router.post("/:cid/products/:pid", async (req, res) => {
+  const { cid, pid } = req.params;
+  if (!isValidObjectId(cid) || !isValidObjectId(pid)) {
+    return res.status(400).json({ status: "error", error: "cid/pid inválido" });
+  }
   try {
-    const updated = await cartDAO.addProductToCart(
-      req.params.cid,
-      req.params.pid
-    );
-    if (updated) return res.json({ status: "success", cart: updated });
-    res.status(404).json({ status: "error", error: "Carrito no encontrado" });
-  } catch {
-    res
-      .status(500)
-      .json({ status: "error", error: "Error al agregar producto" });
+    const inc = Number(req.body?.inc ?? 1);
+    const updated = await cartDAO.addProductToCart(cid, pid, inc);
+    if (!updated)
+      return res
+        .status(404)
+        .json({ status: "error", error: "Carrito no encontrado" });
+    res.json({ status: "success", payload: updated });
+  } catch (e) {
+    res.status(500).json({ status: "error", error: e.message });
   }
 });
 
-// ⭐ DELETE api/carts/:cid/products/:pid - eliminar un producto específico del carrito
+// Eliminar producto del carrito
 router.delete("/:cid/products/:pid", async (req, res) => {
+  const { cid, pid } = req.params;
+  if (!isValidObjectId(cid) || !isValidObjectId(pid)) {
+    return res.status(400).json({ status: "error", error: "cid/pid inválido" });
+  }
   try {
-    const ok = await cartDAO.removeProduct(req.params.cid, req.params.pid);
-    if (ok)
-      return res.json({
-        status: "success",
-        message: "Producto eliminado del carrito",
-      });
-    res.status(404).json({ status: "error", error: "Carrito no encontrado" });
-  } catch {
-    res
-      .status(500)
-      .json({
-        status: "error",
-        error: "Error al eliminar producto del carrito",
-      });
+    const updated = await cartDAO.removeItem(cid, pid);
+    if (!updated)
+      return res
+        .status(404)
+        .json({ status: "error", error: "Carrito no encontrado" });
+    res.json({ status: "success", payload: updated });
+  } catch (e) {
+    res.status(500).json({ status: "error", error: e.message });
   }
 });
 
-// ⭐ PUT api/carts/:cid - reemplazar TODOS los productos del carrito
-// Body esperado: { "products": [ { "product": "<pid>", "quantity": N }, ... ] }
+// Reemplazar todo el array de productos
 router.put("/:cid", async (req, res) => {
+  const { cid } = req.params;
+  if (!isValidObjectId(cid)) {
+    return res.status(400).json({ status: "error", error: "cid inválido" });
+  }
   try {
-    const { products } = req.body;
-    const updated = await cartDAO.replaceProducts(req.params.cid, products);
-    if (updated) return res.json({ status: "success", cart: updated });
-    res.status(404).json({ status: "error", error: "Carrito no encontrado" });
-  } catch (err) {
-    res.status(400).json({ status: "error", error: err.message });
+    const products = Array.isArray(req.body?.products) ? req.body.products : [];
+    const updated = await cartDAO.replaceItems(cid, products);
+    if (!updated)
+      return res
+        .status(404)
+        .json({ status: "error", error: "Carrito no encontrado" });
+    res.json({ status: "success", payload: updated });
+  } catch (e) {
+    res.status(500).json({ status: "error", error: e.message });
   }
 });
 
-// ⭐ PUT api/carts/:cid/products/:pid - actualizar SOLO la cantidad del producto
-// Body esperado: { "quantity": N }
+// Actualizar cantidad de un producto
 router.put("/:cid/products/:pid", async (req, res) => {
+  const { cid, pid } = req.params;
+  if (!isValidObjectId(cid) || !isValidObjectId(pid)) {
+    return res.status(400).json({ status: "error", error: "cid/pid inválido" });
+  }
   try {
-    const { quantity } = req.body;
-    const updated = await cartDAO.updateProductQuantity(
-      req.params.cid,
-      req.params.pid,
-      Number(quantity)
-    );
-    if (updated) return res.json({ status: "success", cart: updated });
-    res
-      .status(404)
-      .json({ status: "error", error: "Carrito o producto no encontrado" });
-  } catch (err) {
-    res.status(400).json({ status: "error", error: err.message });
+    const qty = Number(req.body?.quantity);
+    if (!Number.isFinite(qty) || qty < 1) {
+      return res
+        .status(400)
+        .json({ status: "error", error: "quantity debe ser >= 1" });
+    }
+    const updated = await cartDAO.updateQty(cid, pid, qty);
+    if (!updated)
+      return res
+        .status(404)
+        .json({ status: "error", error: "Carrito o producto no encontrado" });
+    res.json({ status: "success", payload: updated });
+  } catch (e) {
+    res.status(500).json({ status: "error", error: e.message });
   }
 });
 
-// ⭐ DELETE api/carts/:cid - vaciar carrito
+// Vaciar carrito
 router.delete("/:cid", async (req, res) => {
+  const { cid } = req.params;
+  if (!isValidObjectId(cid)) {
+    return res.status(400).json({ status: "error", error: "cid inválido" });
+  }
   try {
-    const cleared = await cartDAO.clearCart(req.params.cid);
-    if (cleared) return res.json({ status: "success", cart: cleared });
-    res.status(404).json({ status: "error", error: "Carrito no encontrado" });
-  } catch {
-    res.status(500).json({ status: "error", error: "Error al vaciar carrito" });
+    const cleared = await cartDAO.clearCart(cid);
+    if (!cleared)
+      return res
+        .status(404)
+        .json({ status: "error", error: "Carrito no encontrado" });
+    res.json({ status: "success", payload: cleared });
+  } catch (e) {
+    res.status(500).json({ status: "error", error: e.message });
   }
 });
 

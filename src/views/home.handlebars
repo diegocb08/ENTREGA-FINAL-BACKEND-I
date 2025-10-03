@@ -1,2 +1,22 @@
-<h1>Home</h1>
-<p>Proyecto Entrega Final — base lista.</p>
+<h1>Home (lista estática)</h1>
+
+{{#if products.length}}
+  <ul>
+    {{#each products}}
+      <li style="margin:.4rem 0;">
+        <strong>{{this.title}}</strong>
+        — ${{this.price}}
+        ·
+        {{this.category}}
+      </li>
+    {{/each}}
+  </ul>
+{{else}}
+  <p>No hay productos.</p>
+{{/if}}
+
+<p style="margin-top:1rem;">
+  <a href="/realtimeproducts">Ver productos en tiempo real</a>
+  ·
+  <a href="/products">Ver listado paginado</a>
+</p>

@@ -4,7 +4,14 @@ class ProductDAO {
   // CREATE
   async addProduct(data) {
     const { title, description, code, price, stock, category } = data;
-    if (!title || !description || !code || !price || !stock || !category) {
+    if (
+      !title ||
+      !description ||
+      !code ||
+      price == null ||
+      stock == null ||
+      !category
+    ) {
       throw new Error("Campos obligatorios faltantes");
     }
     const exists = await Product.findOne({ code });
@@ -13,87 +20,137 @@ class ProductDAO {
     const doc = await Product.create({
       ...data,
       status: data.status ?? true,
-      thumbnails: data.thumbnails ?? [],
+      thumbnails: Array.isArray(data.thumbnails) ? data.thumbnails : [],
     });
     return doc.toObject();
   }
 
-  // READ (sin paginación) — útil para sockets
+  // READ
   async getProducts() {
-    return await Product.find().lean();
+    return Product.find().lean();
   }
 
-  // READ by id
   async getProductById(id) {
-    return await Product.findById(id).lean();
+    return Product.findById(id).lean();
   }
 
-  // UPDATE
-  async updateProduct(id, updatedFields) {
-    if (updatedFields?.id) delete updatedFields.id;
-    const updated = await Product.findByIdAndUpdate(id, updatedFields, {
+  // UPDATE (sin tocar _id)
+  async updateProduct(id, data) {
+    if (!id) throw new Error("id requerido");
+    const toUpdate = { ...data };
+    delete toUpdate._id;
+
+    // Si cambian el code, debe ser único
+    if (toUpdate.code) {
+      const exists = await Product.findOne({
+        code: toUpdate.code,
+        _id: { $ne: id },
+      });
+      if (exists)
+        throw new Error(`El código '${toUpdate.code}' ya está en uso`);
+    }
+
+    const updated = await Product.findByIdAndUpdate(id, toUpdate, {
       new: true,
       runValidators: true,
-      lean: true,
-    });
-    return updated; // null si no existe
+    }).lean();
+
+    return updated;
   }
 
   // DELETE
   async deleteProduct(id) {
-    const res = await Product.findByIdAndDelete(id);
-    return !!res;
+    return Product.findByIdAndDelete(id).lean();
   }
 
-  // ⭐ GET paginado/filtrado/ordenado (para GET /api/products)
-  async getProductsPaginated({ limit = 10, page = 1, sort, query }) {
-    // 1) Filtro: categoría o disponibilidad (status)
+  /**
+   * Paginación + filtros:
+   * limit, page, sort=asc|desc (price), query (regex en title/category y palabras para disponibilidad),
+   * category (case-insensitive), status=true|false, minPrice/maxPrice.
+   */
+  async getProductsPaginated({
+    limit,
+    page,
+    sort,
+    query,
+    category,
+    status,
+    minPrice,
+    maxPrice,
+  }) {
+    const _limit = Math.max(1, Number(limit) || 10);
+    const _page = Math.max(1, Number(page) || 1);
+
     const filter = {};
+
     if (query) {
-      // soporta "category:Calzado", "status:true" o "Calzado" (interpreta categoría)
-      if (query.includes(":")) {
-        const [key, raw] = query.split(":");
-        if (key === "category") filter.category = raw;
-        if (key === "status") filter.status = raw === "true";
-      } else {
-        filter.category = query;
-      }
+      const q = String(query).trim();
+      const wordsForTrue = ["available", "disponible", "true", "1"];
+      const wordsForFalse = ["unavailable", "no disponible", "false", "0"];
+      if (wordsForTrue.includes(q.toLowerCase())) filter.status = true;
+      if (wordsForFalse.includes(q.toLowerCase())) filter.status = false;
+
+      const rx = new RegExp(q, "i");
+      filter.$or = [{ title: rx }, { category: rx }];
     }
 
-    // 2) Orden: por precio asc/desc
+    if (category && String(category).trim() !== "") {
+      filter.category = new RegExp(`^${String(category).trim()}$`, "i");
+    }
+
+    if (status !== undefined) {
+      filter.status = String(status) === "true";
+    }
+
+    if (minPrice != null || maxPrice != null) {
+      filter.price = {};
+      if (minPrice != null) filter.price.$gte = Number(minPrice);
+      if (maxPrice != null) filter.price.$lte = Number(maxPrice);
+    }
+
     const sortOpt = {};
     if (sort === "asc") sortOpt.price = 1;
-    else if (sort === "desc") sortOpt.price = -1;
+    if (sort === "desc") sortOpt.price = -1;
 
-    // 3) Normalizar
-    limit = Math.max(parseInt(limit) || 10, 1);
-    page = Math.max(parseInt(page) || 1, 1);
-    const skip = (page - 1) * limit;
+    const totalDocs = await Product.countDocuments(filter);
+    const totalPages = Math.max(1, Math.ceil(totalDocs / _limit));
+    const skip = (_page - 1) * _limit;
 
-    // 4) Consultas
-    const [items, totalDocs] = await Promise.all([
-      Product.find(filter).sort(sortOpt).skip(skip).limit(limit).lean(),
-      Product.countDocuments(filter),
-    ]);
+    const docs = await Product.find(filter)
+      .sort(sortOpt)
+      .skip(skip)
+      .limit(_limit)
+      .lean();
 
-    // 5) Meta
-    const totalPages = Math.max(Math.ceil(totalDocs / limit), 1);
-    const hasPrevPage = page > 1;
-    const hasNextPage = page < totalPages;
-    const prevPage = hasPrevPage ? page - 1 : null;
-    const nextPage = hasNextPage ? page + 1 : null;
+    const prevPage = _page > 1 ? _page - 1 : null;
+    const nextPage = _page < totalPages ? _page + 1 : null;
 
     return {
-      payload: items,
+      status: "success",
+      payload: docs,
       totalPages,
       prevPage,
       nextPage,
-      page,
-      hasPrevPage,
-      hasNextPage,
+      page: _page,
+      hasPrevPage: !!prevPage,
+      hasNextPage: !!nextPage,
       totalDocs,
-      limit,
+      limit: _limit,
     };
+  }
+
+  async getCategories() {
+    const cats = await Product.distinct("category");
+    const seen = new Set();
+    const out = [];
+    for (const c of cats) {
+      const key = String(c).trim().toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        out.push(c);
+      }
+    }
+    return out.sort((a, b) => String(a).localeCompare(String(b)));
   }
 }
 

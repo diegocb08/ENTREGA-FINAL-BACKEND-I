@@ -4,47 +4,54 @@ const productDAO = new ProductDAO();
 
 const router = Router();
 
-/**
- * Construye un link preservando el resto de query params pero con la page indicada.
- */
-function buildPageLink(req, targetPage, extra = {}) {
-  const base = req.baseUrl || "/api/products";
-  const params = new URLSearchParams(req.query);
-  if (targetPage != null) params.set("page", String(targetPage));
-  // aplicar extras (por ej. normalizar limit o sort si hicimos defaults)
-  for (const [k, v] of Object.entries(extra)) {
-    if (v === null || v === undefined || v === "") params.delete(k);
-    else params.set(k, String(v));
+function buildLink(req, page, overrides = {}) {
+  if (!page) return null;
+  const url = new URL(req.protocol + "://" + req.get("host") + req.originalUrl);
+  url.searchParams.set("page", String(page));
+  for (const [k, v] of Object.entries(overrides)) {
+    if (v === undefined || v === null || v === "") url.searchParams.delete(k);
+    else url.searchParams.set(k, String(v));
   }
-  return `${base}?${params.toString()}`;
+  return url.pathname + "?" + url.searchParams.toString();
 }
 
-// ⭐ GET /api/products  (paginación + filtros + orden + formato pedido)
+/** LIST + filtros + paginación + sort  (Entrega Final) */
 router.get("/", async (req, res) => {
   try {
-    const { limit, page, sort, query } = req.query;
+    const { limit, page, sort, query, category, status, minPrice, maxPrice } =
+      req.query;
 
     const result = await productDAO.getProductsPaginated({
       limit,
       page,
       sort,
       query,
+      category,
+      status,
+      minPrice,
+      maxPrice,
     });
 
-    // prev/next links (o null si no aplica)
     const prevLink = result.hasPrevPage
-      ? buildPageLink(req, result.prevPage, {
+      ? buildLink(req, result.prevPage, {
           limit: result.limit,
           sort,
           query,
+          category,
+          status,
+          minPrice,
+          maxPrice,
         })
       : null;
-
     const nextLink = result.hasNextPage
-      ? buildPageLink(req, result.nextPage, {
+      ? buildLink(req, result.nextPage, {
           limit: result.limit,
           sort,
           query,
+          category,
+          status,
+          minPrice,
+          maxPrice,
         })
       : null;
 
@@ -65,31 +72,34 @@ router.get("/", async (req, res) => {
   }
 });
 
-// CRUD opcional (mantenerlos ayuda a probar con Postman y al realtime)
+/** GET /api/products/categories  (dropdown dinámico) */
+router.get("/categories", async (_req, res) => {
+  try {
+    const cats = await productDAO.getCategories();
+    res.json({ status: "success", payload: cats });
+  } catch (err) {
+    res.status(500).json({ status: "error", error: err.message });
+  }
+});
+
+/** CRUD clásico (útil para pruebas/insomnia/postman y coherente con consigna global) */
 router.get("/:pid", async (req, res) => {
   try {
     const product = await productDAO.getProductById(req.params.pid);
-    if (product) return res.json({ status: "success", product });
-    res.status(404).json({ status: "error", error: "Producto no encontrado" });
-  } catch {
-    res
-      .status(500)
-      .json({ status: "error", error: "Error al obtener producto" });
+    if (!product)
+      return res
+        .status(404)
+        .json({ status: "error", error: "Producto no encontrado" });
+    res.json({ status: "success", payload: product });
+  } catch (err) {
+    res.status(500).json({ status: "error", error: err.message });
   }
 });
 
 router.post("/", async (req, res) => {
   try {
     const created = await productDAO.addProduct(req.body);
-
-    // emitir a vistas realtime (si las usás)
-    const io = req.app.get("io");
-    if (io) {
-      const list = await productDAO.getProducts();
-      io.emit("updateProducts", list);
-    }
-
-    res.status(201).json({ status: "success", product: created });
+    res.status(201).json({ status: "success", payload: created });
   } catch (err) {
     res.status(400).json({ status: "error", error: err.message });
   }
@@ -98,15 +108,11 @@ router.post("/", async (req, res) => {
 router.put("/:pid", async (req, res) => {
   try {
     const updated = await productDAO.updateProduct(req.params.pid, req.body);
-    if (updated) {
-      const io = req.app.get("io");
-      if (io) {
-        const list = await productDAO.getProducts();
-        io.emit("updateProducts", list);
-      }
-      return res.json({ status: "success", product: updated });
-    }
-    res.status(404).json({ status: "error", error: "Producto no encontrado" });
+    if (!updated)
+      return res
+        .status(404)
+        .json({ status: "error", error: "Producto no encontrado" });
+    res.json({ status: "success", payload: updated });
   } catch (err) {
     res.status(400).json({ status: "error", error: err.message });
   }
@@ -114,20 +120,14 @@ router.put("/:pid", async (req, res) => {
 
 router.delete("/:pid", async (req, res) => {
   try {
-    const ok = await productDAO.deleteProduct(req.params.pid);
-    if (ok) {
-      const io = req.app.get("io");
-      if (io) {
-        const list = await productDAO.getProducts();
-        io.emit("updateProducts", list);
-      }
-      return res.json({ status: "success", message: "Producto eliminado" });
-    }
-    res.status(404).json({ status: "error", error: "Producto no encontrado" });
-  } catch {
-    res
-      .status(500)
-      .json({ status: "error", error: "Error al eliminar producto" });
+    const deleted = await productDAO.deleteProduct(req.params.pid);
+    if (!deleted)
+      return res
+        .status(404)
+        .json({ status: "error", error: "Producto no encontrado" });
+    res.json({ status: "success", payload: deleted });
+  } catch (err) {
+    res.status(500).json({ status: "error", error: err.message });
   }
 });
 

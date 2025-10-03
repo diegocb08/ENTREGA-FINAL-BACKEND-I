@@ -1,57 +1,44 @@
 <h1>Productos</h1>
 
-<form method="get" action="/products" style="margin-bottom:10px;">
-  <input type="text" name="query" placeholder="category:Calzado o status:true" value="{{query}}" />
-  <select name="sort">
-    <option value="asc" {{#if (eq sort "asc")}}selected{{/if}}>Precio ↑</option>
+<section class="toolbar" style="display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:10px;">
+  <input id="q" type="search" placeholder="Buscar por título o categoría" value="{{query}}" />
+  <select id="categorySelect"><option value="">Todas las categorías</option></select>
+  <select id="statusSelect">
+    <option value="">Disponibilidad</option>
+    <option value="true" {{#if (eq status "true")}}selected{{/if}}>Disponible</option>
+    <option value="false" {{#if (eq status "false")}}selected{{/if}}>No disponible</option>
   </select>
-  <input type="number" name="limit" min="1" value="{{limit}}" placeholder="limit" />
-  <button type="submit">Filtrar</button>
-</form>
+  <select id="sort">
+    <option value="">Ordenar por precio</option>
+    <option value="asc" {{#if (eq sort "asc")}}selected{{/if}}>Menor a mayor</option>
+    <option value="desc" {{#if (eq sort "desc")}}selected{{/if}}>Mayor a menor</option>
+  </select>
+  <input id="limit" type="number" min="1" value="{{limit}}" style="width:100px" />
+  <button id="apply">Aplicar</button>
+</section>
 
-<ul id="productsList">
-  {{#each products}}
-    <li data-id="{{this._id}}">
-      <div>
-        <strong>{{this.title}}</strong> — ${{this.price}} — {{this.category}}
-        <div style="font-size:0.9em;color:#666">{{this.description}}</div>
-      </div>
-      <div style="display:flex; gap:10px;">
-        <a href="/products/{{this._id}}">Ver detalle</a>
-        <button class="addToCartBtn" data-pid="{{this._id}}">Agregar al carrito</button>
-      </div>
-    </li>
-  {{/each}}
-</ul>
+{{#if products.length}}
+  <ul id="productsList" class="grid" style="list-style:none; display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:1rem; padding:0;">
+    {{#each products}}
+      <li class="card" style="border:1px solid #e5e7eb; border-radius:8px; padding:1rem;">
+        <h3 style="margin:0 0 .5rem 0;"><a href="/products/{{this._id}}">{{this.title}}</a></h3>
+        <div style="font-size:.9em; color:#555; margin-bottom:.5rem;">{{this.description}}</div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span><strong>${{this.price}}</strong> · {{this.category}}</span>
+          <button class="addToCartBtn" data-pid="{{this._id}}">Agregar al carrito</button>
+        </div>
+      </li>
+    {{/each}}
+  </ul>
 
-<div style="margin-top:12px;">
-  {{#if hasPrevPage}}<a href="{{prevLink}}">« Anterior</a>{{/if}}
-  <span style="margin:0 10px;">Página {{page}} / {{totalPages}}</span>
-  {{#if hasNextPage}}<a href="{{nextLink}}">Siguiente »</a>{{/if}}
-</div>
+  <nav class="pagination" style="display:flex; gap:1rem; justify-content:center; align-items:center; margin-top:1rem;">
+    {{#if hasPrevPage}}<a href="{{prevLink}}">« Anterior</a>{{/if}}
+    <span>Página {{page}} de {{totalPages}}</span>
+    {{#if hasNextPage}}<a href="{{nextLink}}">Siguiente »</a>{{/if}}
+  </nav>
+{{else}}
+  <p>No hay productos para los filtros seleccionados.</p>
+{{/if}}
 
-<script>
-  // Pequeño helper de comparación para el select de sort si no lo registraste en server
-  (function polyfillEqHelper(){
-    try {
-      // Si no existe Handlebars.helpers.eq, lo registramos (sólo afecta al cliente si usa hbs runtime)
-      if (typeof Handlebars !== "undefined" && !Handlebars.helpers.eq) {
-        Handlebars.registerHelper("eq", function (a, b) { return a === b; });
-      }
-    } catch(_) {}
-  })();
-
-  document.addEventListener("DOMContentLoaded", () => {
-    document.querySelectorAll(".addToCartBtn").forEach(btn => {
-      btn.addEventListener("click", async () => {
-        const pid = btn.dataset.pid;
-        const cid = prompt("Ingrese su Cart ID (cid):");
-        if (!cid) return;
-        const res = await fetch(`/api/carts/${cid}/product/${pid}`, { method: "POST" });
-        const data = await res.json();
-        if (data.status === "success") alert("Agregado al carrito");
-        else alert(data.error || "Error al agregar");
-      });
-    });
-  });
-</script>
+{{!-- JS externo para evitar conflictos de template --}}
+<script src="/public/js/products.js"></script>

@@ -1,16 +1,42 @@
 <h1>{{product.title}}</h1>
-<p>{{product.description}}</p>
-<p><strong>Precio:</strong> ${{product.price}}</p>
-<p><strong>Categoría:</strong> {{product.category}}</p>
-<p><strong>Stock:</strong> {{product.stock}}</p>
 
-<button id="addBtn" data-pid="{{product._id}}">Agregar al carrito</button>
+<div
+  style="display:grid; grid-template-columns: 1fr; gap:1rem; max-width:720px;"
+>
+  <div>
+    <p style="color:#555;">{{product.description}}</p>
+    <p><strong>Precio:</strong> ${{product.price}}</p>
+    <p><strong>Categoría:</strong> {{product.category}}</p>
+    <p><strong>Stock:</strong> {{product.stock}}</p>
+  </div>
+
+  <div style="display:flex; gap:.5rem; align-items:center;">
+    <label for="qty">Cantidad</label>
+    <input id="qty" type="number" value="1" min="1" style="width:80px;" />
+    <button id="addBtn">Agregar al carrito</button>
+    <a href="/products">Volver</a>
+  </div>
+</div>
 
 <script>
-  document.getElementById("addBtn").addEventListener("click", async (e) => {
-  const pid = e.target.dataset.pid; const cid = prompt("Ingrese su Cart ID
-  (cid):"); if (!cid) return; const res = await
-  fetch(`/api/carts/${cid}/product/${pid}`, { method: "POST" }); const data =
-  await res.json(); if (data.status === "success") alert("Agregado al carrito");
-  else alert(data.error || "Error al agregar"); });
+  const PID = "{{product._id}}"; function isHex24(s){ return
+  /^[a-f0-9]{24}$/i.test(s||''); } async function getOrCreateCartId(){ let cid =
+  localStorage.getItem('cid'); if (!isHex24(cid)) { const r = await
+  fetch('/api/carts', { method:'POST',
+  headers:{'Content-Type':'application/json'} }); const data = await r.json();
+  if (data?.status === 'success' && data?.cart?._id) { cid = data.cart._id;
+  localStorage.setItem('cid', cid); const badge =
+  document.getElementById('cidBadge'); if (badge) badge.textContent = 'CID: ' +
+  cid; } else { throw new Error(data?.error || 'No se pudo crear el carrito'); }
+  } return cid; } document.getElementById('addBtn').addEventListener('click',
+  async () => { try { const qty = Math.max(1,
+  Number(document.getElementById('qty').value) || 1); const cid = await
+  getOrCreateCartId(); const res = await
+  fetch(`/api/carts/${cid}/products/${PID}`, { method: "POST", headers: {
+  "Content-Type": "application/json" }, body: JSON.stringify({ inc: qty }) });
+  const data = await res.json(); if (data.status === "success") {
+  document.getElementById('addBtn').textContent = "Agregado ✓"; setTimeout(() =>
+  document.getElementById('addBtn').textContent = "Agregar al carrito", 1000); }
+  else { alert(data.error || "Error al agregar"); } } catch(e){ alert(e.message
+  || 'Error'); } });
 </script>
